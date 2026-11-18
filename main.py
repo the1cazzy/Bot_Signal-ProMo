@@ -8,7 +8,7 @@ raw_chat_ids = (
 )  # ป้องกัน Error กรณีค่าเป็น None
 CHAT_IDS = [cid.strip() for cid in raw_chat_ids.split(",") if cid.strip()]
 
-IMAGE_PATH = "images/491529.jpg"
+IMAGE_PATH = "491529.jpg"
 
 MESSAGE_TEXT = """📢 ประกาศแจ้งสมาชิก COMPASS ทุกท่าน
 
