@@ -2,22 +2,34 @@ name: Auto Send Telegram
 
 on:
   schedule:
-    - cron: '0 11 * * *'  # 11:00 UTC = 18:00 น. (6 โมงเย็น) เวลาไทย
-  workflow_dispatch:
+    # รันตอน 06:00 น. เวลาไทย เฉพาะจันทร์-ศุกร์ 
+    # (ตรงกับ 23:00 UTC ของวันอาทิตย์-พฤหัสบดี)
+    - cron: '0 23 * * 0-4'
+    
+    # รันตอน 18:00 น. เวลาไทย เฉพาะจันทร์-ศุกร์ 
+    # (ตรงกับ 11:00 UTC ของวันจันทร์-ศุกร์)
+    - cron: '0 11 * * 1-5'
+    
+  workflow_dispatch: # ปุ่มสำหรับกดรันเทสต์เอง
 
 jobs:
-  send:
+  send-message:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - run: pip install requests
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-      - env:
+      - name: Run script
+        env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python main.py
