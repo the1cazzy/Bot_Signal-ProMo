@@ -1,89 +1,70 @@
 import os
-import time
 import requests
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-raw_chat_ids = (
-    os.environ.get("TELEGRAM_CHAT_ID") or ""
-)  # ป้องกัน Error กรณีค่าเป็น None
+raw_chat_ids = os.environ.get("TELEGRAM_CHAT_ID") or ""
 CHAT_IDS = [cid.strip() for cid in raw_chat_ids.split(",") if cid.strip()]
 
-IMAGE_PATH = "491529.jpg"
+IMAGE_PATH = "491527.jpg"
 
-MESSAGE_TEXT = """📢 ประกาศแจ้งสมาชิก COMPASS ทุกท่าน
+CAPTION_TEXT = """🧭✨ สิทธิประโยชน์ที่สมาชิก COMPASS จะได้รับ
 
-ขณะนี้ทาง COMPASS ได้เปิดห้อง Signal ใหม่ เพื่อยกระดับการให้บริการและจัดระบบสัญญาณเทรดให้เป็นสัดส่วนตามระดับสมาชิก
+เพราะเราเชื่อว่าการเทรดที่ดี ต้องมีทั้งแนวทาง กลยุทธ์ และการบริหารความเสี่ยงที่เหมาะสม
 
-สมาชิกทุกท่านที่ประสงค์จะเข้าร่วมห้อง Signal ใหม่ สามารถแจ้งความประสงค์กับทาง Admin พร้อมแจ้ง เลข CID ของบัญชีโบรกเกอร์ OTG เพื่อดำเนินการตรวจสอบและเพิ่มสิทธิ์เข้าห้องได้เลยครับ
+📊 เลือกระดับ Signal Room ให้เหมาะกับพอร์ตของคุณ
 
-📊 ระดับห้อง Signal ใหม่
 🔹 COMPASS START — 100 USD
+เทรด M5 เน้นการเทรดระยะสั้น
+
 🔹 COMPASS PRO — 500 USD
+จุดเข้าตามแผน เป้าหมาย 1,000 จุด
+
 🔹 COMPASS ELITE — 1,000 USD
+จุดเข้าตามโครงสร้างตลาด พร้อมแนวทางวางแผนการเทรด
 
-สิทธิ์การเข้าถึงห้อง Signal
-✅ สมาชิกระดับ ELITE (1,000 USD) เข้าถึงได้ครบทุกห้อง (START, PRO และ ELITE)
-✅ สมาชิกระดับ PRO (500 USD) เข้าถึงได้ 2 ห้อง (START และ PRO)
-✅ สมาชิกระดับ START (100 USD) เข้าถึงห้อง START ได้
+👑 COMPASS — เข็มทิศเทรดเดอร์
+เติบโตไปด้วยกัน เรียนรู้และพัฒนาทักษะอย่างเป็นระบบ
 
-📌 ข้อควรทราบและกำหนดการสำคัญ
-1. ห้อง Signal ใหม่จะเริ่มส่งสัญญาณตั้งแต่วันที่ 1 ธันวาคม 2569 (1/12/69) เป็นต้นไป
-2. ห้อง Signal เดิมจะยุติการส่งสัญญาณตั้งแต่วันที่เริ่มใช้งานห้องใหม่เป็นต้นไป
-3. สำหรับสมาชิกที่ยังไม่มีบัญชีโบรกเกอร์ OTG สามารถติดต่อ Admin เพื่อขอรายละเอียดและคำแนะนำในการเปิดบัญชีได้
+📩 สนใจเข้าร่วม ติดต่อสอบถามรายละเอียดเพิ่มเติมกับ Admin ได้เลย
 
-📩 วิธีเข้าร่วมห้อง Signal ใหม่
-เพียงแจ้งความประสงค์กับทาง Admin พร้อมส่งเลข CID ของบัญชี OTG เพื่อดำเนินการตรวจสอบสิทธิ์และเพิ่มเข้าห้องตามระดับสมาชิก
-
-ขอบคุณสมาชิก COMPASS ทุกท่านที่ไว้วางใจและเติบโตไปด้วยกัน
-
-COMPASS — เติบโตอย่างมีระบบ ก้าวไปด้วยกันอย่างยั่งยืน"""
+⚠️ เงื่อนไขเป็นไปตามที่บริษัทกำหนด
+การลงทุนมีความเสี่ยง ผู้ลงทุนควรศึกษาข้อมูลและทำความเข้าใจก่อนตัดสินใจ ผลกำไรไม่สามารถรับประกันได้"""
 
 
-def send_telegram_announcement():
+def send_telegram_photo():
   if not TELEGRAM_TOKEN or not CHAT_IDS:
-    print("❌ ไม่พบค่า TELEGRAM_TOKEN หรือ TELEGRAM_CHAT_ID ใน Secrets")
-    return
+    raise ValueError(
+        "❌ ไม่พบค่า TELEGRAM_TOKEN หรือ TELEGRAM_CHAT_ID ใน GitHub Secrets"
+    )
 
   if not os.path.exists(IMAGE_PATH):
-    print(f"❌ ไม่พบไฟล์รูปภาพที่ '{IMAGE_PATH}'")
-    return
+    raise FileNotFoundError(f"❌ ไม่พบไฟล์รูปภาพ '{IMAGE_PATH}' ใน Repository")
 
-  base_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
+  url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
+  failed_chats = []
 
   for chat_id in CHAT_IDS:
-    print(f"⏳ กำลังส่งประกาศไปยังห้อง: {chat_id} ...")
-    try:
-      # 1. ส่งรูปภาพ
-      with open(IMAGE_PATH, "rb") as image_file:
-        photo_res = requests.post(
-            f"{base_url}/sendPhoto",
-            files={"photo": image_file},
-            data={"chat_id": chat_id},
-        ).json()
+    # เปิดไฟล์ใหม่ทุกรอบของลูป เพื่อให้ pointer เริ่มอ่านจากต้นไฟล์เสมอ
+    with open(IMAGE_PATH, "rb") as image_file:
+      files = {"photo": image_file}
+      data = {"chat_id": chat_id, "caption": CAPTION_TEXT}
 
-      if not photo_res.get("ok"):
-        print(f"❌ [{chat_id}] ส่งรูปไม่สำเร็จ: {photo_res.get('description')}")
-        continue  # ข้ามไปส่งห้องถัดไปทันที ไม่หยุดทำงานทั้งระบบ
+      response = requests.post(url, files=files, data=data)
+      result = response.json()
 
-      # 2. ส่งข้อความ
-      msg_res = requests.post(
-          f"{base_url}/sendMessage",
-          data={"chat_id": chat_id, "text": MESSAGE_TEXT},
-      ).json()
-
-      if msg_res.get("ok"):
-        print(f"✅ [{chat_id}] ส่งรูปภาพและประกาศสำเร็จ!")
+      if result.get("ok"):
+        print(f"✅ [{chat_id}] ส่งรูปภาพและข้อความสำเร็จ!")
       else:
-        print(
-            f"❌ [{chat_id}] ส่งข้อความไม่สำเร็จ: {msg_res.get('description')}"
-        )
+        err_msg = result.get("description")
+        print(f"❌ [{chat_id}] ส่งไม่สำเร็จ: {err_msg}")
+        failed_chats.append(f"{chat_id} ({err_msg})")
 
-      # หน่วงเวลา 1 วินาที ป้องกัน Telegram บล็อก Rate Limit กรณีมีหลายห้อง
-      time.sleep(1)
-
-    except Exception as e:
-      print(f"❌ [{chat_id}] เกิดข้อผิดพลาด: {e}")
+  # ถ้ามีห้องไหนส่งไม่ผ่าน ให้แจ้ง Error ตอนจบเพื่อให้ GitHub Actions ขึ้นสีแดง
+  if failed_chats:
+    raise RuntimeError(
+        f"❌ ส่งไม่สำเร็จ {len(failed_chats)} ห้อง: {', '.join(failed_chats)}"
+    )
 
 
 if __name__ == "__main__":
-  send_telegram_announcement()
+  send_telegram_photo()
